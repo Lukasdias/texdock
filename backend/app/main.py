@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.db import engine, init_db
-from app.routers import projects
+from app.routers import files, projects
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     app.include_router(projects.router)
+    app.include_router(files.router)
 
     return app
 
