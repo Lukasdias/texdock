@@ -243,7 +243,11 @@ export function LatexEditor({
             ...searchKeymap,
             ...completionKeymap,
           ]),
-          latex({ enableAutocomplete: false, autoCloseBrackets: false }),
+          latex({
+            enableAutocomplete: false,
+            autoCloseBrackets: false,
+            linter: { checkMissingPackages: false },
+          }),
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
