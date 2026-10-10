@@ -25,11 +25,8 @@ collaboration, no git integration.
 
 | Project grid | Editor and PDF preview |
 | --- | --- |
-| ![Project grid](docs/screenshots/projects.png) | ![Editor and PDF preview](docs/screenshots/editor.png) |
-
-| Compile problems | Dark and light themes |
-| --- | --- |
-| ![Compile problems](docs/screenshots/problems.png) | ![Dark and light themes](docs/screenshots/themes.png) |
+| <img width="1920" height="1080" alt="127 0 0 1_8000_(PC)" src="https://github.com/user-attachments/assets/063a7f0e-0143-4f11-b703-dfe7e4695bda" />
+| <img width="1920" height="1080" alt="127 0 0 1_8000_projects_9e8e1812-bcff-44c3-82a2-c1abdcbfbe65(PC)" src="https://github.com/user-attachments/assets/f4700fa1-28db-4b84-bc5e-64614f7b33f9" />
 
 ## Feature matrix
 
