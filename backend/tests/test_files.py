@@ -1,7 +1,3 @@
-import pytest
-from app.paths import InvalidPathError  # noqa: F401
-
-
 async def test_text_roundtrip(client):
     pid = (await client.post("/api/projects", json={"name": "P"})).json()["id"]
     r = await client.put(f"/api/projects/{pid}/files/chapters/intro.tex", json={"content": "hi"})

@@ -14,6 +14,7 @@ from sqlalchemy import delete, select
 
 from app.latex.compiler import compile_project
 from app.models import Compilation, File, Project
+from app.schemas import Problem
 from app.ws import ConnectionManager
 
 
@@ -58,18 +59,33 @@ class CompileQueue:
                 project_id, {"status": "running", "problems": []}
             )
 
-            outcome = await compile_project(
-                files,
-                project.main_file,
-                project.engine,
-                self._settings.compile_timeout_seconds,
-                self._settings.compile_root,
-            )
+            try:
+                outcome = await compile_project(
+                    files,
+                    project.main_file,
+                    project.engine,
+                    self._settings.compile_timeout_seconds,
+                    self._settings.compile_root,
+                )
+                compilation.status = "success" if outcome.success else "error"
+                compilation.log = outcome.log
+                compilation.pdf = outcome.pdf
+                compilation.synctex = outcome.synctex
+                problems = [p.model_dump() for p in outcome.problems]
+            except Exception as exc:
+                compilation.status = "error"
+                compilation.log = f"internal compiler error: {exc!r}"
+                compilation.pdf = None
+                compilation.synctex = None
+                problems = [
+                    Problem(
+                        kind="error",
+                        file=project.main_file,
+                        line=None,
+                        message=str(exc),
+                    ).model_dump()
+                ]
 
-            compilation.status = "success" if outcome.success else "error"
-            compilation.log = outcome.log
-            compilation.pdf = outcome.pdf
-            compilation.synctex = outcome.synctex
             compilation.finished_at = datetime.now(timezone.utc)
             await session.commit()
 
@@ -77,10 +93,7 @@ class CompileQueue:
 
             await self._manager.broadcast(
                 project_id,
-                {
-                    "status": compilation.status,
-                    "problems": [p.model_dump() for p in outcome.problems],
-                },
+                {"status": compilation.status, "problems": problems},
             )
 
     async def _prune(self, session, project_id: UUID) -> None:
