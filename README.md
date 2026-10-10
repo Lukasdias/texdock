@@ -18,6 +18,19 @@ person wants a local LaTeX editor: one image, one database, one command,
 bound to `127.0.0.1`. The trade-off is deliberate — no multi-user, no real-time
 collaboration, no git integration.
 
+## Screenshots
+
+<!-- Placeholders. Drop image files into docs/screenshots/ using the names
+     below, then delete this comment. -->
+
+| Project grid | Editor and PDF preview |
+| --- | --- |
+| ![Project grid](docs/screenshots/projects.png) | ![Editor and PDF preview](docs/screenshots/editor.png) |
+
+| Compile problems | Dark and light themes |
+| --- | --- |
+| ![Compile problems](docs/screenshots/problems.png) | ![Dark and light themes](docs/screenshots/themes.png) |
+
 ## Feature matrix
 
 | Capability | texdock | Overleaf CE (self-hosted) | Overleaf (cloud) |
