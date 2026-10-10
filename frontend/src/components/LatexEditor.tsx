@@ -19,6 +19,7 @@ import {
 import {
   autocompletion,
   closeBrackets,
+  completionKeymap,
   type Completion,
   type CompletionContext,
   type CompletionResult,
@@ -214,6 +215,9 @@ export function LatexEditor({
               latexCompletionSource(false),
               projectCompletionSource(projectFilesRef),
             ],
+            defaultKeymap: true,
+            activateOnTyping: true,
+            icons: true,
           }),
           keymap.of([
             {
@@ -235,8 +239,9 @@ export function LatexEditor({
             ...defaultKeymap,
             ...historyKeymap,
             ...searchKeymap,
+            ...completionKeymap,
           ]),
-          latex(),
+          latex({ enableAutocomplete: false, autoCloseBrackets: false }),
           editorTheme,
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
