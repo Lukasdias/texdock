@@ -26,6 +26,7 @@ import {
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { searchKeymap } from "@codemirror/search";
 import { latex, latexCompletionSource } from "codemirror-lang-latex";
+import { Crosshair } from "lucide-react";
 import { toast } from "sonner";
 import { useCompile, useFile, useSaveFile } from "@/lib/queries";
 import { useAutosave } from "@/hooks/useAutosave";
@@ -34,6 +35,8 @@ interface LatexEditorProps {
   projectId: string;
   path: string;
   projectFiles: string[];
+  revealLine?: { line: number; nonce: number };
+  onForwardSearch?: (file: string, line: number) => void;
 }
 
 const editorTheme = EditorView.theme(
@@ -125,7 +128,13 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
-export function LatexEditor({ projectId, path, projectFiles }: LatexEditorProps) {
+export function LatexEditor({
+  projectId,
+  path,
+  projectFiles,
+  revealLine,
+  onForwardSearch,
+}: LatexEditorProps) {
   const fileQuery = useFile(projectId, path);
   const saveFile = useSaveFile(projectId);
   const compile = useCompile(projectId);
@@ -137,8 +146,20 @@ export function LatexEditor({ projectId, path, projectFiles }: LatexEditorProps)
     projectFilesRef.current = projectFiles;
   }, [projectFiles]);
 
+  const onForwardSearchRef = useRef(onForwardSearch);
+  useEffect(() => {
+    onForwardSearchRef.current = onForwardSearch;
+  }, [onForwardSearch]);
+
   const [initialContent, setInitialContent] = useState<string | null>(null);
   const [doc, setDoc] = useState("");
+
+  function triggerForwardSearch() {
+    const view = viewRef.current;
+    if (!view || !onForwardSearchRef.current) return;
+    const line = view.state.doc.lineAt(view.state.selection.main.head).number;
+    onForwardSearchRef.current(path, line);
+  }
 
   useEffect(() => {
     if (initialContent === null && fileQuery.data) {
@@ -202,6 +223,14 @@ export function LatexEditor({ projectId, path, projectFiles }: LatexEditorProps)
                 return true;
               },
             },
+            {
+              key: "Mod-Alt-j",
+              preventDefault: true,
+              run: () => {
+                triggerForwardSearch();
+                return true;
+              },
+            },
             ...defaultKeymap,
             ...historyKeymap,
             ...searchKeymap,
@@ -225,6 +254,21 @@ export function LatexEditor({ projectId, path, projectFiles }: LatexEditorProps)
     };
   }, [initialContent]);
 
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || !revealLine) return;
+    const lineNumber = Math.min(
+      Math.max(revealLine.line, 1),
+      view.state.doc.lines,
+    );
+    const line = view.state.doc.line(lineNumber);
+    view.dispatch({
+      selection: { anchor: line.from },
+      effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+    });
+    view.focus();
+  }, [revealLine, initialContent]);
+
   if (fileQuery.isLoading) {
     return (
       <p className="p-4 text-sm text-muted-foreground">Loading file…</p>
@@ -241,12 +285,23 @@ export function LatexEditor({ projectId, path, projectFiles }: LatexEditorProps)
     <div className="flex h-full flex-col">
       <div className="flex h-7 shrink-0 items-center justify-between border-b px-2 text-xs text-muted-foreground">
         <span className="truncate font-mono">{path}</span>
-        <span>
-          {status === "saving"
-            ? "Saving…"
-            : status === "saved"
-              ? "Saved"
-              : ""}
+        <span className="flex items-center gap-2">
+          <span>
+            {status === "saving"
+              ? "Saving…"
+              : status === "saved"
+                ? "Saved"
+                : ""}
+          </span>
+          <button
+            type="button"
+            onClick={triggerForwardSearch}
+            title="Sync to PDF (Ctrl+Alt+J)"
+            aria-label="Sync to PDF"
+            className="inline-flex size-5 items-center justify-center rounded-sm hover:bg-accent hover:text-accent-foreground"
+          >
+            <Crosshair className="size-3.5" />
+          </button>
         </span>
       </div>
       <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden" />

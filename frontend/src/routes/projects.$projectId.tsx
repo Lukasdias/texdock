@@ -47,6 +47,16 @@ function ProjectPage() {
 
   const [activePath, setActivePath] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
+  const [pdfTarget, setPdfTarget] = useState<{
+    page: number;
+    x: number;
+    y: number;
+    nonce: number;
+  } | null>(null);
+  const [editorReveal, setEditorReveal] = useState<{
+    line: number;
+    nonce: number;
+  } | null>(null);
 
   const status = statusQuery.data?.status ?? "idle";
   const finishedAt = statusQuery.data?.finished_at ?? null;
@@ -103,6 +113,40 @@ function ProjectPage() {
     setActivePath(file);
   }
 
+  async function handleForwardSearch(file: string, line: number) {
+    try {
+      const target = await api.compile.synctexForward(projectId, file, line);
+      setPdfTarget({
+        page: target.page,
+        x: target.x,
+        y: target.y,
+        nonce: Date.now() + Math.random(),
+      });
+    } catch (error) {
+      toast.error(`SyncTeX forward search failed: ${errorMessage(error)}`);
+    }
+  }
+
+  async function handleInverseSearch(page: number, x: number, y: number) {
+    try {
+      const target = await api.compile.synctexInverse(projectId, page, x, y);
+      if (!files.some((entry) => entry.path === target.file)) {
+        toast.error(`${target.file} is not part of this project`);
+        return;
+      }
+      if (target.file !== activePath) {
+        toast.info(`Opened ${target.file}`);
+      }
+      setActivePath(target.file);
+      setEditorReveal({
+        line: target.line,
+        nonce: Date.now() + Math.random(),
+      });
+    } catch (error) {
+      toast.error(`SyncTeX inverse search failed: ${errorMessage(error)}`);
+    }
+  }
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3 text-sm">
@@ -126,6 +170,8 @@ function ProjectPage() {
               projectId={projectId}
               path={activePath}
               projectFiles={textFilePaths}
+              revealLine={editorReveal ?? undefined}
+              onForwardSearch={handleForwardSearch}
             />
           ) : (
             <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
@@ -149,6 +195,8 @@ function ProjectPage() {
               <PdfViewer
                 pdfUrl={api.compile.pdfUrl(projectId)}
                 revision={revision}
+                revealTarget={pdfTarget ?? undefined}
+                onInverseSearch={handleInverseSearch}
               />
             </div>
             <ProblemsPanel

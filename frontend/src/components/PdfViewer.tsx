@@ -1,5 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import {
+  pagePixelsFromPdfPoint,
+  pdfPointFromPagePixels,
+} from "@/lib/synctex";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
@@ -9,11 +13,18 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 interface PdfViewerProps {
   pdfUrl: string;
   revision: number;
+  revealTarget?: { page: number; x: number; y: number; nonce: number };
+  onInverseSearch?: (page: number, x: number, y: number) => void;
 }
 
 type ViewerState = "loading" | "empty" | "ready" | "error";
 
-export function PdfViewer({ pdfUrl, revision }: PdfViewerProps) {
+export function PdfViewer({
+  pdfUrl,
+  revision,
+  revealTarget,
+  onInverseSearch,
+}: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ViewerState>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +91,7 @@ export function PdfViewer({ pdfUrl, revision }: PdfViewerProps) {
 
           const wrapper = document.createElement("div");
           wrapper.dataset.page = String(pageNumber);
+          wrapper.dataset.scale = String(cssScale);
           wrapper.className = "relative mx-auto mb-2 w-fit";
           wrapper.appendChild(canvas);
           scrollContainer.appendChild(wrapper);
@@ -106,11 +118,65 @@ export function PdfViewer({ pdfUrl, revision }: PdfViewerProps) {
     };
   }, [pdfUrl, revision]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || !revealTarget) return undefined;
+    const wrapper = container.querySelector<HTMLElement>(
+      `[data-page="${revealTarget.page}"]`,
+    );
+    if (!wrapper) return undefined;
+
+    const scale = Number(wrapper.dataset.scale ?? "1");
+    const point = pagePixelsFromPdfPoint(
+      revealTarget.page,
+      revealTarget.x,
+      revealTarget.y,
+      { width: 0, height: 0, scale },
+    );
+
+    const targetTop = wrapper.offsetTop + point.y - container.clientHeight / 2;
+    container.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+
+    const marker = document.createElement("div");
+    marker.className =
+      "pointer-events-none absolute z-10 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/40 ring-2 ring-primary";
+    marker.style.left = `${point.x}px`;
+    marker.style.top = `${point.y}px`;
+    wrapper.appendChild(marker);
+
+    const timeout = window.setTimeout(() => marker.remove(), 1600);
+    return () => {
+      window.clearTimeout(timeout);
+      marker.remove();
+    };
+  }, [revealTarget, revision, state]);
+
+  function handleViewerClick(event: MouseEvent<HTMLDivElement>) {
+    if (!onInverseSearch) return;
+    if (!(event.ctrlKey || event.metaKey)) return;
+    const target = event.target as HTMLElement | null;
+    const wrapper = target?.closest<HTMLElement>("[data-page]");
+    const container = containerRef.current;
+    if (!wrapper || !container) return;
+
+    const rect = wrapper.getBoundingClientRect();
+    const scale = Number(wrapper.dataset.scale ?? "1");
+    const page = Number(wrapper.dataset.page ?? "1");
+    const point = pdfPointFromPagePixels(
+      page,
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+      { width: 0, height: 0, scale },
+    );
+    onInverseSearch(page, point.x, point.y);
+  }
+
   return (
     <div className="relative h-full min-h-0">
       <div
         ref={containerRef}
         data-pdf-scroll
+        onClick={handleViewerClick}
         className="h-full overflow-auto p-2"
       />
       {state !== "ready" ? (
