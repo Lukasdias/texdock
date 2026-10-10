@@ -91,16 +91,21 @@ async def session_factory(engine):
 
 
 @pytest.fixture
-async def session(session_factory):
+async def session(session_factory, engine):
+    await _truncate(engine)
     async with session_factory() as session:
-        for table in reversed(Base.metadata.sorted_tables):
-            await session.execute(table.delete())
-        await session.commit()
         yield session
 
 
+async def _truncate(engine) -> None:
+    async with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
+
+
 @pytest.fixture
-async def app():
+async def app(engine):
+    await _truncate(engine)
     application = create_app()
     async with application.router.lifespan_context(application):
         yield application
