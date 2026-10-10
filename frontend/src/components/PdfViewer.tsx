@@ -1,7 +1,16 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { PdfSearchBar } from "@/components/PdfSearchBar";
 import { extractLinkOverlays, type LinkOverlay } from "@/lib/pdfLinks";
+import {
+  composeTransform,
+  findMatches,
+  indexPageText,
+  matchRects,
+  type PlacedTextItem,
+  type TextMatch,
+} from "@/lib/pdfSearch";
 import {
   pagePixelsFromPdfPoint,
   pdfPointFromPagePixels,
@@ -70,6 +79,37 @@ export function PdfViewer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<ViewerState>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [pageText, setPageText] = useState<Map<number, PlacedTextItem[]>>(
+    () => new Map(),
+  );
+  const [selection, setSelection] = useState<{ query: string; index: number }>({
+    query: "",
+    index: 0,
+  });
+
+  // Derived during render from the extracted page text, so changing the query
+  // never cascades a re-render.
+  const matches = useMemo(() => {
+    const needle = query.trim();
+    if (!needle) return [] as { page: number; match: TextMatch }[];
+    const found: { page: number; match: TextMatch }[] = [];
+    for (const [page, items] of pageText) {
+      const index = indexPageText(items);
+      for (const match of findMatches(index, needle)) {
+        found.push({ page, match });
+      }
+    }
+    found.sort((a, b) => a.page - b.page || a.match.start - b.match.start);
+    return found;
+  }, [query, pageText]);
+
+  const activeMatch = matches.length
+    ? selection.query === query
+      ? selection.index % matches.length
+      : 0
+    : 0;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -104,6 +144,7 @@ export function PdfViewer({
         }
 
         scrollContainer.replaceChildren();
+        const textByPage = new Map<number, PlacedTextItem[]>();
 
         async function followDestination(dest: unknown) {
           try {
@@ -157,8 +198,9 @@ export function PdfViewer({
           wrapper.appendChild(canvas);
           scrollContainer.appendChild(wrapper);
 
+          const cssViewport = page.getViewport({ scale: cssScale });
+
           try {
-            const cssViewport = page.getViewport({ scale: cssScale });
             const annotations = await page.getAnnotations();
             for (const link of extractLinkOverlays(annotations, (rect) => {
               const topLeft = cssViewport.convertToViewportPoint(
@@ -179,11 +221,34 @@ export function PdfViewer({
             // Annotations are best-effort; keep the page visible without them.
           }
 
+          try {
+            const textContent = await page.getTextContent();
+            const placed: PlacedTextItem[] = [];
+            for (const raw of textContent.items) {
+              if (!("str" in raw) || raw.str.length === 0) continue;
+              const matrix = composeTransform(
+                cssViewport.transform,
+                raw.transform,
+              );
+              placed.push({
+                text: raw.str,
+                x: matrix[4],
+                y: matrix[5],
+                width: raw.width * cssScale,
+                height: Math.hypot(matrix[2], matrix[3]) || raw.height * cssScale,
+              });
+            }
+            textByPage.set(pageNumber, placed);
+          } catch {
+            // Text extraction is best-effort; search just finds nothing there.
+          }
+
           await page.render({ canvas, canvasContext: context, viewport })
             .promise;
         }
 
         scrollContainer.scrollTop = previousScroll;
+        setPageText(textByPage);
         setState("ready");
       } catch (loadError) {
         if (!cancelled) {
@@ -234,6 +299,94 @@ export function PdfViewer({
     };
   }, [revealTarget, revision, state]);
 
+  // Ctrl/⌘+F opens the find bar only when focus is inside the PDF panel, so
+  // the editor keeps its own search shortcut.
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      if (event.key.toLowerCase() !== "f") return;
+      const container = containerRef.current;
+      const active = document.activeElement;
+      if (!container || !active || !container.contains(active)) return;
+      event.preventDefault();
+      setSearchOpen(true);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Draw highlight boxes and scroll the active match into view.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    container
+      .querySelectorAll<HTMLElement>(".pdf-search-layer")
+      .forEach((layer) => layer.remove());
+
+    const layers = new Map<number, HTMLElement>();
+    const layerFor = (page: number): HTMLElement | null => {
+      const existing = layers.get(page);
+      if (existing) return existing;
+      const wrapper = container.querySelector<HTMLElement>(
+        `[data-page="${page}"]`,
+      );
+      if (!wrapper) return null;
+      const layer = document.createElement("div");
+      layer.className = "pdf-search-layer";
+      wrapper.appendChild(layer);
+      layers.set(page, layer);
+      return layer;
+    };
+
+    matches.forEach((entry, index) => {
+      const items = pageText.get(entry.page) ?? [];
+      const layer = layerFor(entry.page);
+      if (!layer) return;
+      for (const [left, top, right, bottom] of matchRects(entry.match, items)) {
+        const box = document.createElement("div");
+        box.className =
+          index === activeMatch
+            ? "pdf-search-hit pdf-search-hit-active"
+            : "pdf-search-hit";
+        box.style.left = `${left}px`;
+        box.style.top = `${top}px`;
+        box.style.width = `${right - left}px`;
+        box.style.height = `${bottom - top}px`;
+        layer.appendChild(box);
+      }
+    });
+
+    const current = matches[activeMatch];
+    if (!current) return;
+    const items = pageText.get(current.page) ?? [];
+    const rect = matchRects(current.match, items)[0];
+    const wrapper = container.querySelector<HTMLElement>(
+      `[data-page="${current.page}"]`,
+    );
+    if (rect && wrapper) {
+      const top = wrapper.offsetTop + rect[1] - container.clientHeight / 2;
+      container.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }
+  }, [matches, activeMatch, pageText]);
+
+  function nextMatch() {
+    if (!matches.length) return;
+    setSelection({ query, index: (activeMatch + 1) % matches.length });
+  }
+
+  function prevMatch() {
+    if (!matches.length) return;
+    setSelection({
+      query,
+      index: (activeMatch - 1 + matches.length) % matches.length,
+    });
+  }
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setQuery("");
+  }
+
   function handleViewerClick(event: MouseEvent<HTMLDivElement>) {
     if (!onInverseSearch) return;
     if (!(event.ctrlKey || event.metaKey)) return;
@@ -259,9 +412,22 @@ export function PdfViewer({
       <div
         ref={containerRef}
         data-pdf-scroll
+        tabIndex={-1}
+        onMouseDown={() => containerRef.current?.focus({ preventScroll: true })}
         onClick={handleViewerClick}
-        className="panel-inset h-full overflow-auto p-3"
+        className="panel-inset h-full overflow-auto p-3 outline-none"
       />
+      {searchOpen ? (
+        <PdfSearchBar
+          query={query}
+          onQueryChange={setQuery}
+          matchCount={matches.length}
+          activeIndex={matches.length ? activeMatch : -1}
+          onNext={nextMatch}
+          onPrev={prevMatch}
+          onClose={closeSearch}
+        />
+      ) : null}
       {state !== "ready" ? (
         <div
           className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center font-mono text-xs tracking-widest uppercase"

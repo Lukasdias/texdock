@@ -243,4 +243,22 @@
     outline: 2px solid var(--ring);
     outline-offset: 1px;
   }
+
+  /* In-PDF find highlights. */
+  .pdf-search-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .pdf-search-hit {
+    position: absolute;
+    border-radius: 1px;
+    background-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  }
+
+  .pdf-search-hit-active {
+    background-color: color-mix(in srgb, var(--primary) 55%, transparent);
+    box-shadow: 0 0 0 1px var(--primary);
+  }
 }
