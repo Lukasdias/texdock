@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         texlive-latex-base \
         texlive-latex-recommended \
         texlive-latex-extra \
+        texlive-xetex \
         texlive-fonts-recommended \
         texlive-bibtex-extra \
         latexmk \
