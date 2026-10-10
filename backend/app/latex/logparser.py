@@ -9,7 +9,7 @@ import re
 
 from app.schemas import Problem
 
-_OPEN_FILE = re.compile(r"\(\.?/?([^\s()]+)")
+_OPEN_FILE = re.compile(r"\(\./([^\s()]+)")
 _LINE_NUMBER = re.compile(r"l\.(\d+)")
 _INPUT_LINE = re.compile(r"on input line (\d+)")
 _WARNING_PREFIX = "LaTeX Warning:"

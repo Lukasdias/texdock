@@ -9,6 +9,20 @@ describe("parseProblems", () => {
       { kind: "error", file: "main.tex", line: 12, message: "Undefined control sequence." },
     ]);
   });
+
+  it('does not treat non-file parentheticals as the open file', () => {
+    const log =
+      "(./main.tex\n" +
+      "(/usr/share/texlive/texmf-dist/tex/latex/base/article.cls\n" +
+      "File: size10.clo 2024/06/29 (size option)\n" +
+      ")\n" +
+      "! LaTeX Error: File `cv-common.sty' not found.\n" +
+      "or enter new name. (Default extension: sty)\n" +
+      "! Emergency stop.\n" +
+      "l.3 \\begin{document}\n";
+    const files = parseProblems(log).map((p) => p.file);
+    expect(files).toEqual(["main.tex", "main.tex"]);
+  });
 });
 
 describe("synctex coordinate transform", () => {
