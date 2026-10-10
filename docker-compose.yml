@@ -14,9 +14,24 @@ services:
       retries: 12
 
   app:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "127.0.0.1:8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-texdock}:${POSTGRES_PASSWORD:-texdock}@db:5432/${POSTGRES_DB:-texdock}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Development image (backend + tests). Run the suite with:
+  #   docker compose --profile dev run --rm backend-dev uv run pytest
+  backend-dev:
+    profiles: ["dev"]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-texdock}:${POSTGRES_PASSWORD:-texdock}@db:5432/${POSTGRES_DB:-texdock}
       TEST_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-texdock}:${POSTGRES_PASSWORD:-texdock}@db:5432/${POSTGRES_DB:-texdock}_test

@@ -1,0 +1,13 @@
+.git
+.gitignore
+.worktrees
+.superpowers
+docs
+**/node_modules
+**/dist
+**/.venv
+**/__pycache__
+**/*.pyc
+.env
+*.log
+prod-smoke.sh
