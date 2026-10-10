@@ -181,6 +181,7 @@ export function LatexEditor({
   const { status } = useAutosave(doc, {
     delayMs: 2000,
     enabled: initialContent !== null,
+    baseline: initialContent ?? undefined,
     onSave: (value) =>
       saveNowRef.current(value).catch((error: unknown) => {
         toast.error(`Save failed: ${errorMessage(error)}`);
