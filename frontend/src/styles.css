@@ -226,4 +226,21 @@
       inset 0 0 0 1px color-mix(in srgb, var(--background) 55%, black 45%),
       0 1px 1px color-mix(in srgb, black 45%, transparent);
   }
+
+  /* Clickable overlay for a PDF link annotation. */
+  .pdf-link {
+    position: absolute;
+    border-radius: 1px;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+  }
+
+  .pdf-link:hover {
+    background-color: color-mix(in srgb, var(--primary) 22%, transparent);
+  }
+
+  .pdf-link:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
 }

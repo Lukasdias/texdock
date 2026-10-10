@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import { extractLinkOverlays, type LinkOverlay } from "@/lib/pdfLinks";
 import {
   pagePixelsFromPdfPoint,
   pdfPointFromPagePixels,
@@ -9,6 +11,46 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.mjs",
   import.meta.url,
 ).toString();
+
+/**
+ * A transparent, positioned anchor over a PDF link annotation. External links
+ * open in a new tab; internal destinations scroll the viewer. Ctrl/⌘-click is
+ * left to bubble so the viewer's inverse SyncTeX search still works.
+ */
+function createLinkOverlay(
+  link: LinkOverlay,
+  onFollowInternal: (dest: unknown) => void,
+): HTMLAnchorElement {
+  const anchor = document.createElement("a");
+  anchor.className = "pdf-link";
+  anchor.style.left = `${link.rect[0]}px`;
+  anchor.style.top = `${link.rect[1]}px`;
+  anchor.style.width = `${link.rect[2] - link.rect[0]}px`;
+  anchor.style.height = `${link.rect[3] - link.rect[1]}px`;
+
+  if (link.url) {
+    anchor.href = link.url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    anchor.title = link.url;
+  } else {
+    anchor.href = "#";
+    anchor.setAttribute("role", "link");
+  }
+
+  anchor.addEventListener("click", (event) => {
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      return;
+    }
+    if (!link.url) {
+      event.preventDefault();
+      onFollowInternal(link.dest);
+    }
+  });
+
+  return anchor;
+}
 
 interface PdfViewerProps {
   pdfUrl: string;
@@ -62,6 +104,25 @@ export function PdfViewer({
         }
 
         scrollContainer.replaceChildren();
+
+        async function followDestination(dest: unknown) {
+          try {
+            const resolved =
+              typeof dest === "string"
+                ? await pdfDocument.getDestination(dest)
+                : dest;
+            if (!Array.isArray(resolved) || resolved.length === 0) return;
+            const pageIndex = await pdfDocument.getPageIndex(
+              resolved[0] as Parameters<PDFDocumentProxy["getPageIndex"]>[0],
+            );
+            scrollContainer
+              .querySelector<HTMLElement>(`[data-page="${pageIndex + 1}"]`)
+              ?.scrollIntoView({ behavior: "smooth", block: "start" });
+          } catch {
+            // unresolvable internal destination — ignore
+          }
+        }
+
         const dpr = window.devicePixelRatio || 1;
         const containerWidth = scrollContainer.clientWidth || 800;
 
@@ -95,6 +156,28 @@ export function PdfViewer({
           wrapper.className = "relative mx-auto mb-2 w-fit border border-border shadow-md";
           wrapper.appendChild(canvas);
           scrollContainer.appendChild(wrapper);
+
+          try {
+            const cssViewport = page.getViewport({ scale: cssScale });
+            const annotations = await page.getAnnotations();
+            for (const link of extractLinkOverlays(annotations, (rect) => {
+              const topLeft = cssViewport.convertToViewportPoint(
+                rect[0],
+                rect[1],
+              );
+              const bottomRight = cssViewport.convertToViewportPoint(
+                rect[2],
+                rect[3],
+              );
+              return [topLeft[0], topLeft[1], bottomRight[0], bottomRight[1]];
+            })) {
+              wrapper.appendChild(
+                createLinkOverlay(link, (dest) => void followDestination(dest)),
+              );
+            }
+          } catch {
+            // Annotations are best-effort; keep the page visible without them.
+          }
 
           await page.render({ canvas, canvasContext: context, viewport })
             .promise;
