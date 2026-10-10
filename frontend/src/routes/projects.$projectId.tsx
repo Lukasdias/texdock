@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { FileTree } from "@/components/FileTree";
+import { LatexEditor } from "@/components/LatexEditor";
 import { useProject } from "@/lib/queries";
 
 export const Route = createFileRoute("/projects/$projectId")({
@@ -28,6 +29,10 @@ function ProjectPage() {
   }
 
   const { project, files } = projectQuery.data;
+  const textFilePaths = files
+    .filter((file) => !file.is_binary)
+    .map((file) => file.path);
+  const activeFile = files.find((file) => file.path === activePath);
 
   return (
     <div className="flex h-full flex-col">
@@ -46,11 +51,20 @@ function ProjectPage() {
         </Panel>
         <Separator className="w-px bg-border" />
         <Panel minSize="20%" id="editor" className="min-w-0">
-          <div className="flex h-full items-center justify-center p-4 text-sm text-muted-foreground">
-            {activePath
-              ? `${activePath} — editor arrives in a later step`
-              : "Select a file to edit"}
-          </div>
+          {activePath && activeFile && !activeFile.is_binary ? (
+            <LatexEditor
+              key={activePath}
+              projectId={projectId}
+              path={activePath}
+              projectFiles={textFilePaths}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
+              {activePath
+                ? `${activePath} is a binary asset — no editor.`
+                : "Select a file to edit"}
+            </div>
+          )}
         </Panel>
         <Separator className="w-px bg-border" />
         <Panel defaultSize="38%" minSize="20%" id="pdf" className="min-w-0">
