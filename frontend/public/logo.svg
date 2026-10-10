@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label=".tex">
+  <defs>
+    <!-- Diagonal safety tape, same motif as the app header. -->
+    <pattern id="tape" width="13" height="13" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6.5" height="13" fill="#f5a314" />
+      <rect x="6.5" width="6.5" height="13" fill="#14171d" />
+    </pattern>
+    <clipPath id="tile">
+      <rect width="64" height="64" rx="9" />
+    </clipPath>
+    <!-- Brushed-graphite sheen. -->
+    <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b1f27" />
+      <stop offset="1" stop-color="#111419" />
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect width="64" height="64" fill="url(#plate)" />
+    <rect width="64" height="7" fill="url(#tape)" />
+
+    <text
+      x="32"
+      y="37"
+      text-anchor="middle"
+      dominant-baseline="central"
+      font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+      font-size="21"
+      font-weight="700"
+      letter-spacing="-0.5"
+    >
+      <tspan fill="#f5a314">.</tspan><tspan fill="#e9e7e2">tex</tspan>
+    </text>
+  </g>
+
+  <rect
+    x="0.75"
+    y="0.75"
+    width="62.5"
+    height="62.5"
+    rx="8.25"
+    fill="none"
+    stroke="#2c313a"
+    stroke-width="1.5"
+  />
+</svg>
