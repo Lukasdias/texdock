@@ -20,6 +20,7 @@ export const queryKeys = {
   file: (projectId: string, path: string) =>
     ["projects", projectId, "file", path] as const,
   log: (projectId: string) => ["projects", projectId, "log"] as const,
+  status: (projectId: string) => ["projects", projectId, "status"] as const,
 };
 
 export function useProjects() {
