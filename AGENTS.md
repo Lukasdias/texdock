@@ -114,6 +114,8 @@ bash prod-smoke.sh                  # after the stack is up
 - SyncTeX coordinates are top-left origin in points; the frontend transform is
   a pure scale (`x/scale`, `y/scale`), not a Y-flip.
 - `xelatex` requires the `texlive-xetex` package; it is installed in both images.
+- `fontawesome5` and other CTAN font packages require `texlive-fonts-extra`
+  (a large package); it is installed in both images.
 - `.dockerignore` excludes `.worktrees/`, `docs/`, `dist`, `node_modules`, and
   `.venv` to keep the build context small.
 - `docker compose` may need `DOCKER_CONFIG` pointed at an empty dir on hosts
