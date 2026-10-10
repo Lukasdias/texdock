@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.db import SessionLocal, engine, init_db
 from app.jobs import CompileQueue
+from app.paths import InvalidPathError, normalize_project_path
 from app.routers import compile as compile_router
 from app.routers import files, projects
 from app.ws import ConnectionManager
@@ -52,13 +53,22 @@ def _mount_spa(app: FastAPI, static_dir: Path) -> None:
     if assets_dir.is_dir():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
+    resolved_root = static_dir.resolve()
+
     @app.get("/{full_path:path}", include_in_schema=False)
     async def spa_fallback(full_path: str) -> FileResponse:
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404, detail="not found")
-        candidate = static_dir / full_path
-        if full_path and candidate.is_file():
-            return FileResponse(candidate)
+        if full_path:
+            # Reuse the project path guard, then confirm containment after
+            # resolution so neither ``..`` nor an absolute path can escape.
+            try:
+                safe = normalize_project_path(full_path)
+            except InvalidPathError:
+                raise HTTPException(status_code=404, detail="not found")
+            candidate = (resolved_root / safe).resolve()
+            if candidate.is_file() and candidate.is_relative_to(resolved_root):
+                return FileResponse(candidate)
         if index_file.is_file():
             return FileResponse(index_file)
         raise HTTPException(status_code=404, detail="not found")
