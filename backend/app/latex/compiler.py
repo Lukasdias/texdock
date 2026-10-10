@@ -92,8 +92,11 @@ async def compile_project(
         )
 
         timed_out = False
+        stdout = b""
         try:
-            await asyncio.wait_for(proc.communicate(), timeout=timeout_seconds)
+            stdout, _ = await asyncio.wait_for(
+                proc.communicate(), timeout=timeout_seconds
+            )
         except (TimeoutError, asyncio.TimeoutError):
             timed_out = True
             _kill_group(proc)
@@ -101,6 +104,11 @@ async def compile_project(
 
         stem = Path(main_file).stem
         log_text = _read_text(workdir / f"{stem}.log")
+        if not log_text:
+            # latexmk could not run the engine (missing binary, permissions,
+            # disk) and wrote no .log; keep its own diagnostics instead of
+            # dropping them silently.
+            log_text = stdout.decode("utf-8", errors="replace")
         pdf = _read_bytes(workdir / f"{stem}.pdf")
         synctex = _read_bytes(workdir / f"{stem}.synctex.gz")
 
@@ -120,6 +128,15 @@ async def compile_project(
         # a clean document can still yield a nonzero exit in some environments.
         has_errors = any(problem.kind == "error" for problem in problems)
         success = not timed_out and pdf is not None and not has_errors
+        if not success and not has_errors:
+            problems.append(
+                Problem(
+                    kind="error",
+                    file=main_file,
+                    line=None,
+                    message="Compilation failed; see the log for details.",
+                )
+            )
         return CompileResult(
             success=success,
             log=log_text,

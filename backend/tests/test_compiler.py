@@ -65,3 +65,13 @@ async def test_filename_with_spaces_compiles(tmp_path):
     main = tex("my paper.tex", "\\documentclass{article}\\begin{document}Ok\\end{document}\n")
     r = await compile_project([main], "my paper.tex", "pdflatex", 120, tmp_path)
     assert r.success
+
+
+@pytest.mark.latex
+async def test_engine_failure_is_logged(tmp_path):
+    # latexmk cannot launch an unknown engine and writes no .log; its own
+    # stdout/stderr must still surface, and the failure must be reported.
+    r = await compile_project([GOOD], "main.tex", "definitelynotanengine", 30, tmp_path)
+    assert r.success is False
+    assert r.log.strip() != ""
+    assert any(p.kind == "error" for p in r.problems)
