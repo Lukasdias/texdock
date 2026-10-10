@@ -56,12 +56,14 @@ const editorTheme = EditorView.theme(
       backgroundColor: "var(--background)",
       color: "var(--muted-foreground)",
       border: "none",
+      borderRight: "1px solid var(--border)",
     },
     ".cm-activeLine": {
       backgroundColor: "color-mix(in srgb, var(--accent) 45%, transparent)",
     },
     ".cm-activeLineGutter": {
       backgroundColor: "color-mix(in srgb, var(--accent) 45%, transparent)",
+      color: "var(--primary)",
     },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection":
       {
@@ -277,34 +279,50 @@ export function LatexEditor({
 
   if (fileQuery.isLoading) {
     return (
-      <p className="p-4 text-sm text-muted-foreground">Loading file…</p>
+      <p className="p-4 font-mono text-xs tracking-widest text-muted-foreground uppercase">
+        Loading file…
+      </p>
     );
   }
 
   if (fileQuery.isError || !fileQuery.data) {
     return (
-      <p className="p-4 text-sm text-destructive">Could not load {path}.</p>
+      <p className="p-4 font-mono text-xs text-destructive uppercase">
+        Could not load {path}.
+      </p>
     );
   }
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-7 shrink-0 items-center justify-between border-b px-2 text-xs text-muted-foreground">
-        <span className="truncate font-mono">{path}</span>
+      <div className="panel-inset flex h-7 shrink-0 items-center justify-between border-b border-border px-2 text-muted-foreground">
+        <span className="truncate font-mono text-[11px]">{path}</span>
         <span className="flex items-center gap-2">
-          <span>
-            {status === "saving"
-              ? "Saving…"
-              : status === "saved"
-                ? "Saved"
-                : ""}
+          <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.15em] uppercase">
+            {status === "saving" ? (
+              <>
+                <span
+                  aria-hidden
+                  className="size-1.5 animate-pulse rounded-[1px] bg-primary"
+                />
+                saving
+              </>
+            ) : status === "saved" ? (
+              <>
+                <span
+                  aria-hidden
+                  className="size-1.5 rounded-[1px] bg-primary"
+                />
+                saved
+              </>
+            ) : null}
           </span>
           <button
             type="button"
             onClick={triggerForwardSearch}
             title="Sync to PDF (Ctrl+Alt+J)"
             aria-label="Sync to PDF"
-            className="inline-flex size-5 items-center justify-center rounded-sm hover:bg-accent hover:text-accent-foreground"
+            className="inline-flex size-5 items-center justify-center rounded-[1px] border border-transparent hover:border-border hover:bg-accent hover:text-primary"
           >
             <Crosshair className="size-3.5" />
           </button>

@@ -196,7 +196,9 @@ export function FileTree({
                 ) : (
                   <FolderOpen className="size-4 shrink-0 text-muted-foreground" />
                 )}
-                <span className="truncate">{entry.name}</span>
+                <span className="truncate font-condensed text-[11px] font-semibold tracking-[0.08em] uppercase">
+                  {entry.name}
+                </span>
               </button>
               <button
                 type="button"
@@ -220,8 +222,8 @@ export function FileTree({
         <div
           key={`file:${entry.path}`}
           className={cn(
-            "group flex items-center gap-1 rounded-sm pr-1 hover:bg-accent",
-            isActive && "bg-accent text-accent-foreground",
+            "group flex items-center gap-1 rounded-sm pr-1 transition-colors hover:bg-accent",
+            isActive && "bg-accent text-primary",
           )}
           style={{ paddingLeft: depth * 12 + 4 }}
         >
@@ -235,7 +237,7 @@ export function FileTree({
             ) : (
               <FileIcon className="size-4 shrink-0 text-muted-foreground" />
             )}
-            <span className="truncate">{entry.name}</span>
+            <span className="truncate font-mono text-xs">{entry.name}</span>
           </button>
           <button
             type="button"
@@ -268,7 +270,7 @@ export function FileTree({
         setUploadTarget("");
       }}
     >
-      <div className="flex h-9 shrink-0 items-center gap-1 border-b px-1">
+      <div className="panel-inset flex h-9 shrink-0 items-center gap-1 border-b border-border px-1">
         <Button
           type="button"
           size="icon-sm"
@@ -321,7 +323,7 @@ export function FileTree({
       <ScrollArea className="min-h-0 flex-1">
         <div className="p-1">
           {tree.length === 0 ? (
-            <p className="px-2 py-3 text-xs text-muted-foreground">
+            <p className="px-2 py-3 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
               No files yet. Create or drop files here.
             </p>
           ) : (

@@ -32,11 +32,11 @@ export function CompileToolbar({
   const busy = isCompiling || status === "queued" || status === "running";
 
   return (
-    <div className="flex h-9 shrink-0 items-center gap-2 border-b px-2">
+    <div className="panel-inset flex h-9 shrink-0 items-center gap-2 border-b border-border px-2">
       <Button
         type="button"
         size="sm"
-        variant="secondary"
+        variant="default"
         onClick={onCompile}
         disabled={busy}
       >
@@ -57,7 +57,10 @@ export function CompileToolbar({
         {problemCount > 0 ? (
           <Badge variant="destructive">{problemCount} problems</Badge>
         ) : null}
-        <Badge variant={variant}>{status}</Badge>
+        <Badge variant={variant} className="gap-1.5">
+          <span aria-hidden className="size-1.5 rounded-[1px] bg-current" />
+          {status}
+        </Badge>
       </div>
     </div>
   );

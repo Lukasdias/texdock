@@ -84,7 +84,7 @@ export function PdfViewer({
           canvas.height = Math.floor(viewport.height);
           canvas.style.width = `${viewport.width / dpr}px`;
           canvas.style.height = `${viewport.height / dpr}px`;
-          canvas.className = "block bg-white shadow-sm";
+          canvas.className = "block bg-white";
 
           const context = canvas.getContext("2d");
           if (!context) throw new Error("2D canvas context unavailable");
@@ -92,7 +92,7 @@ export function PdfViewer({
           const wrapper = document.createElement("div");
           wrapper.dataset.page = String(pageNumber);
           wrapper.dataset.scale = String(cssScale);
-          wrapper.className = "relative mx-auto mb-2 w-fit";
+          wrapper.className = "relative mx-auto mb-2 w-fit border border-border shadow-md";
           wrapper.appendChild(canvas);
           scrollContainer.appendChild(wrapper);
 
@@ -177,11 +177,11 @@ export function PdfViewer({
         ref={containerRef}
         data-pdf-scroll
         onClick={handleViewerClick}
-        className="h-full overflow-auto p-2"
+        className="panel-inset h-full overflow-auto p-3"
       />
       {state !== "ready" ? (
         <div
-          className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center font-mono text-xs tracking-widest uppercase"
           data-state={state}
         >
           {state === "empty" ? (

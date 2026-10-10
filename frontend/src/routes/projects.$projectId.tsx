@@ -69,13 +69,15 @@ function ProjectPage() {
 
   if (projectQuery.isLoading) {
     return (
-      <p className="p-6 text-sm text-muted-foreground">Loading project…</p>
+      <p className="p-6 font-mono text-xs tracking-widest text-muted-foreground uppercase">
+        Loading project…
+      </p>
     );
   }
 
   if (projectQuery.isError || !projectQuery.data) {
     return (
-      <p className="p-6 text-sm text-destructive">
+      <p className="p-6 font-mono text-xs text-destructive uppercase">
         Could not load this project.
       </p>
     );
@@ -148,10 +150,14 @@ function ProjectPage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b px-3 text-sm">
-        <span className="font-medium">{project.name}</span>
-        <span className="text-muted-foreground">· {project.main_file}</span>
+    <div className="flex h-full flex-col bg-background">
+      <div className="panel-sheen relative flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
+        <span className="font-condensed text-xs font-semibold tracking-[0.14em] uppercase">
+          {project.name}
+        </span>
+        <span className="truncate font-mono text-[11px] text-muted-foreground">
+          {project.main_file}
+        </span>
       </div>
       <Group orientation="horizontal" className="min-h-0 flex-1">
         <Panel defaultSize="18%" minSize="12%" id="tree" className="min-w-0">
@@ -162,7 +168,7 @@ function ProjectPage() {
             onSelect={setActivePath}
           />
         </Panel>
-        <Separator className="w-px bg-border" />
+        <Separator className="w-px bg-border transition-colors hover:bg-primary/70" />
         <Panel minSize="20%" id="editor" className="min-w-0">
           {activePath && activeFile && !activeFile.is_binary ? (
             <LatexEditor
@@ -174,14 +180,14 @@ function ProjectPage() {
               onForwardSearch={handleForwardSearch}
             />
           ) : (
-            <div className="flex h-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
+            <div className="flex h-full items-center justify-center p-4 text-center font-mono text-xs tracking-widest text-muted-foreground uppercase">
               {activePath
                 ? `${activePath} is a binary asset — no editor.`
                 : "Select a file to edit"}
             </div>
           )}
         </Panel>
-        <Separator className="w-px bg-border" />
+        <Separator className="w-px bg-border transition-colors hover:bg-primary/70" />
         <Panel defaultSize="38%" minSize="20%" id="pdf" className="min-w-0">
           <div className="flex h-full flex-col">
             <CompileToolbar

@@ -40,7 +40,13 @@ export function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
       exit={{ opacity: 0, scale: 0.96 }}
       transition={{ duration: 0.15 }}
     >
-      <Card className="group h-full transition-colors hover:border-ring">
+      <Card className="group panel-sheen relative h-full overflow-hidden rounded-sm border-border transition-colors hover:border-primary/60">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-[3px] bg-border transition-colors group-hover:bg-primary"
+        />
+        <span aria-hidden className="rivet absolute top-3 left-3 size-1.5" />
+        <span aria-hidden className="rivet absolute top-3 right-3 size-1.5" />
         <CardHeader className="flex-row items-start justify-between gap-2">
           <button
             type="button"
@@ -48,17 +54,19 @@ export function ProjectCard({ project, onOpen, onDelete }: ProjectCardProps) {
             className="min-w-0 text-left"
           >
             <span className="flex items-center gap-2">
-              <FileText className="size-4 shrink-0 text-muted-foreground" />
-              <span className="truncate font-medium">{project.name}</span>
+              <FileText className="size-4 shrink-0 text-primary" />
+              <span className="truncate font-condensed text-sm font-semibold tracking-[0.06em] uppercase">
+                {project.name}
+              </span>
             </span>
           </button>
           <Badge variant={statusVariant}>{status ?? "no compiles"}</Badge>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
+        <CardContent className="font-mono text-xs text-muted-foreground">
           <p className="truncate">
             {project.main_file} · {project.engine}
           </p>
-          <p className="mt-1">Updated {formatUpdated(project.updated_at)}</p>
+          <p className="mt-1">updated {formatUpdated(project.updated_at)}</p>
         </CardContent>
         <CardFooter className="justify-between gap-2">
           <Button

@@ -93,11 +93,15 @@ function ProjectsPage() {
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-end justify-between gap-4 border-b border-border pb-4">
         <div>
-          <h1 className="text-lg font-semibold">Projects</h1>
-          <p className="text-sm text-muted-foreground">
-            Self-hosted LaTeX projects.
+          <h1 className="font-condensed text-2xl font-bold tracking-[0.12em] uppercase">
+            Projects
+          </h1>
+          <p className="mt-1 font-mono text-[11px] tracking-[0.15em] text-muted-foreground uppercase">
+            <span className="text-primary">▚</span> {projects.length}{" "}
+            {projects.length === 1 ? "project" : "projects"} · self-hosted
+            LaTeX
           </p>
         </div>
         <Button type="button" onClick={() => setCreateOpen(true)}>
@@ -107,16 +111,20 @@ function ProjectsPage() {
       </div>
 
       {projectsQuery.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading projects…</p>
+        <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">
+          Loading projects…
+        </p>
       ) : projectsQuery.isError ? (
-        <p className="text-sm text-destructive">
+        <p className="font-mono text-xs text-destructive uppercase">
           Could not load projects: {errorMessage(projectsQuery.error)}
         </p>
       ) : projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
-          <FolderPlus className="size-8 text-muted-foreground" />
-          <div>
-            <p className="font-medium">No projects yet</p>
+        <div className="panel-inset flex flex-col items-center justify-center gap-4 rounded-sm border border-dashed border-border py-20 text-center">
+          <FolderPlus className="size-9 text-primary" />
+          <div className="space-y-1">
+            <p className="font-condensed text-sm font-semibold tracking-[0.14em] uppercase">
+              No projects yet
+            </p>
             <p className="text-sm text-muted-foreground">
               Create your first LaTeX project to get started.
             </p>
