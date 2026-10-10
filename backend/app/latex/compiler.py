@@ -115,7 +115,11 @@ async def compile_project(
                 )
             )
 
-        success = not timed_out and proc.returncode == 0 and pdf is not None
+        # A compile succeeds when it produced a PDF (unless it timed out) and
+        # the log parsed no errors. latexmk's exit code is not trusted alone:
+        # a clean document can still yield a nonzero exit in some environments.
+        has_errors = any(problem.kind == "error" for problem in problems)
+        success = not timed_out and pdf is not None and not has_errors
         return CompileResult(
             success=success,
             log=log_text,

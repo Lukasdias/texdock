@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, LargeBinary, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, LargeBinary, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -19,9 +19,11 @@ class Project(Base):
     name: Mapped[str] = mapped_column()
     engine: Mapped[str] = mapped_column(default="pdflatex")
     main_file: Mapped[str] = mapped_column(default="main.tex")
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -42,7 +44,7 @@ class File(Base):
     content: Mapped[str | None] = mapped_column(nullable=True)
     blob: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -59,5 +61,9 @@ class Compilation(Base):
     log: Mapped[str | None] = mapped_column(nullable=True)
     pdf: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     synctex: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
-    started_at: Mapped[datetime] = mapped_column(server_default=func.now())
-    finished_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
